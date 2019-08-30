@@ -21,31 +21,32 @@ use Auth;
 
 class TpsController extends Controller
 {
-    public function tps_import(request $request) 
-	{
-		// validasi
-		$this->validate($request, [
-			'file' => 'required|mimes:csv,xls,xlsx'
-		]);
- 
-		// menangkap file excel
-		$file = $request->file('file');
- 
-		// membuat nama file unik
-		$nama_file = rand().$file->getClientOriginalName();
- 
-		// upload ke folder file_siswa di dalam folder public
-		$file->move('file_tps',$nama_file);
- 
-		// import data
+    public function tps_import(Request $request)
+	  {
+    		// validasi
+    		$this->validate($request, [
+    			'file' => 'required|mimes:csv,xls,xlsx'
+    		]);
+
+    		// menangkap file excel
+    		$file = $request->file('file');
+
+    		// membuat nama file unik
+    		$nama_file = rand().$file->getClientOriginalName();
+
+    		// upload ke folder file_siswa di dalam folder public
+    		$file->move('file_tps',$nama_file);
+
+    		// import data
         Excel::import(new TpsImport, public_path('/file_tps/'.$nama_file));
-        
-		// notifikasi dengan session
-		Session::flash('sukses','Data Tps Berhasil Diimport!');
- 
-		// alihkan halaman kembali
-		return redirect('/admin_lembaga/tps');
-	}
+
+    		// notifikasi dengan session
+    		Session::flash('sukses','Data Tps Berhasil Diimport!');
+
+    		// alihkan halaman kembali
+    		return redirect('/admin_lembaga/tps');
+	  }
+
     /**
      * Display a listing of the resource.
      *
@@ -54,12 +55,8 @@ class TpsController extends Controller
     public function index()
     {
         $items = Tps::where('lembaga_id', Auth::user()->lembaga_id)->latest('updated_at')->with('provinsi','kabupaten','kecamatan','kelurahan')->get();
-        // $img= Tps::where('images')->get();
-        // $img_view = DB::select("select* from tps where images='".$images."'");
-        // dd($img_view);
-        // $img = Tps::all();
         $roles = config('variables.role');
-        return view('admin_lembaga.tps.index', compact('items','roles',));
+        return view('admin_lembaga.tps.index', compact('items','roles'));
     }
 
     /**
@@ -99,23 +96,12 @@ class TpsController extends Controller
      */
     public function store(Request $request)
     {
-        
+
         $this->validate($request, Tps::rules());
-        
+
         Tps::create($request->all());
 
         return back()->withSuccess(trans('app.success_store'));
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
     }
 
     /**
@@ -126,7 +112,7 @@ class TpsController extends Controller
      */
     public function edit($id)
     {
-        
+
         $item = Tps::findOrFail($id);
         $provinsi=Provinsi::all()->toArray();
         $kabupaten=Kabupaten::where('id_prov',$item->prov_id)->get()->toArray();
@@ -184,38 +170,20 @@ class TpsController extends Controller
     {
         Tps::destroy($id);
 
-        return back()->withSuccess(trans('app.success_destroy')); 
+        return back()->withSuccess(trans('app.success_destroy'));
     }
 
-    public function downloadImage($id){
+    public function downloadImage($id)
+    {
         $id1=Tps::where('id',$id)->first();
         $download = Tps::where('id', $id1->id)->first();
         $path = public_path(). '/c1/'. $download->images;
         return response()->download($path, $download->filename);
     }
 
-    public function generateSample(Request $request){
+    public function generateSample(Request $request)
+    {
         $lembaga_id = Auth::user()->lembaga_id;
-
-        // // buat generate data TPS
-        // for($i=0; $i<1500;$i++){
-        //     $no_tps = $i+1;
-        //     $data = array(
-        //         'prov_id' => '32',
-        //         'kab_id' => '3212',
-        //         'kec_id' => '321215',
-        //         'kel_id' => '3212152014',
-        //         'total_suara' => rand(1, 1000),
-        //         'suara_tidak_sah' => rand(0,100),
-        //         'no_tps' => $no_tps,
-        //         'is_sample' => 0,
-        //         'created_at' => '2019-06-27 12:27:03',
-        //         'updated_at' => '2019-06-27 12:27:03',
-        //         'lembaga_id' => Auth::user()->lembaga_id,
-        //     );            
-        //     Tps::create($data);
-        // }
-        // exit();
 
         $all_tps_lembaga = Tps::where('lembaga_id', $lembaga_id)->get();
         $seluruh_tps_yang_diinput_admin_lembaga = Tps::where('lembaga_id', $lembaga_id)->orderBy('no_tps','asc')->get();
@@ -223,7 +191,7 @@ class TpsController extends Controller
         $threshold = $request->threshold * $request->threshold;
         $jumlah_sampel = floor($populasi / (1 + $populasi * $threshold));
         $interval = $populasi / $jumlah_sampel;
-        $decimal = floor($interval); 
+        $decimal = floor($interval);
         $fraksi = $interval - $decimal;
         if($fraksi < 0.5){
             $pembulatan = floor($interval);
@@ -245,12 +213,11 @@ class TpsController extends Controller
                 );
                 $this_tps->update($data);
             };
-            
-        }  
+
+        }
 
         return redirect()->route('admin_lembaga' . '.tps.index')->withSuccess('Berhasil generate sampel');
     }
 
-    
-}
 
+}
